@@ -36,7 +36,9 @@
       newData.format = format;
 
       $el.data('livestampdata', newData).empty();
-      $livestamps.push($el[0]);
+      if ($.inArray($el[0], $livestamps) === -1) {
+        $livestamps.push($el[0]);
+      }
     }
   },
 
