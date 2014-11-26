@@ -10,6 +10,7 @@
 }(function($, moment) {
   var updateInterval = 1e3,
       useNativeTimestamps = false,
+      formatters = {},
       paused = false,
       updateID = null,
       $livestamps = $([]),
@@ -18,18 +19,21 @@
     livestampGlobal.resume();
   },
 
-  prep = function($el, timestamp) {
+  prep = function($el, timestamp, format) {
     var oldData = $el.data('livestampdata');
     if ((typeof timestamp === 'number') && !useNativeTimestamps)
       timestamp *= 1e3;
 
     $el.removeAttr('data-livestamp')
-      .removeData('livestamp');
+      .removeData('livestamp')
+      .removeAttr('data-livestamp-format')
+      .removeData('livestamp-format');
 
     timestamp = moment(timestamp);
     if (moment.isMoment(timestamp) && !isNaN(+timestamp)) {
-      var newData = $.extend({ }, { 'original': $el.contents() }, oldData);
+      var newData = $.extend({ }, {'original': $el.contents() }, oldData);
       newData.moment = moment(timestamp);
+      newData.format = format;
 
       $el.data('livestampdata', newData).empty();
       $livestamps.push($el[0]);
@@ -52,7 +56,7 @@
 
       $('[data-livestamp]').each(function() {
         var $this = $(this);
-        prep($this, $this.data('livestamp'));
+        prep($this, $this.data('livestamp'), $this.data('livestamp-format'));
       });
 
       var toRemove = [];
@@ -63,8 +67,9 @@
         if (data === undefined)
           toRemove.push(this);
         else if (moment.isMoment(data.moment)) {
+          var formatter = formatters[data.format];
           var from = $this.html(),
-              to = data.moment.fromNow();
+              to = formatter ? formatter(data.moment) : data.moment.fromNow();
 
           if (from != to) {
             var e = $.Event('change.livestamp');
@@ -99,18 +104,22 @@
         return useNativeTimestamps;
       }
       useNativeTimestamps = nativeTimestamps;
+    },
+
+    registerFormatter: function(name, fn) {
+      formatters[name] = fn;
     }
   },
 
   livestampLocal = {
-    add: function($el, timestamp) {
+    add: function($el, timestamp, format) {
       if ((typeof timestamp === 'number') && !useNativeTimestamps)
         timestamp *= 1e3;
       timestamp = moment(timestamp);
 
       if (moment.isMoment(timestamp) && !isNaN(+timestamp)) {
         $el.each(function() {
-          prep($(this), timestamp);
+          prep($(this), timestamp, format);
         });
         livestampGlobal.update();
       }
