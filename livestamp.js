@@ -151,12 +151,21 @@
 
   $.livestamp = livestampGlobal;
   $(init);
-  $.fn.livestamp = function(method, options) {
-    if (!livestampLocal[method]) {
-      options = method;
+  $.fn.livestamp = function(method, arg1 /* arg2, ... */) {
+    var args = [].slice.call(arguments);
+    method = args[0];
+
+    if (livestampLocal[method]) {
+      // Pop the method off.
+      args.shift();
+    } else {
+      // The method was not specified. Default to 'add'.
       method = 'add';
     }
 
-    return livestampLocal[method](this, options);
+    // Pass the `$el` as the first argument to all local methods.
+    args.unshift(this);
+
+    return livestampLocal[method].apply(null, args);
   };
 }));
